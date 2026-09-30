@@ -1,8 +1,904 @@
-const prizes = [
-  { name: "大当たり！\nL&G 60分 無料", weight: 3 },
-  { name: "レプトンガス 30分 無料", weight: 12 },
-  { name: "レプトンガス 15分 無料", weight: 20 },
-  { name: "ゴッドクリーナー 30分 無料", weight: 8 },
-  { name: "次回 500円OFF", weight: 27 },
-  { name: "有料ドリンク 1杯無料", weight: 30 }
-];
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>heal Halloween Lottery</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+
+      font-family:
+        "Noto Sans JP",
+        "Yu Gothic",
+        "Hiragino Kaku Gothic ProN",
+        sans-serif;
+
+      color: #2f2438;
+
+      background:
+        radial-gradient(
+          circle at top left,
+          rgba(255, 187, 97, 0.35),
+          transparent 35%
+        ),
+        radial-gradient(
+          circle at bottom right,
+          rgba(167, 118, 214, 0.35),
+          transparent 40%
+        ),
+        linear-gradient(
+          135deg,
+          #fff9f2,
+          #f7efff
+        );
+    }
+
+    /* =========================
+       メインカード
+    ========================== */
+
+    .card {
+      position: relative;
+      overflow: hidden;
+
+      width: min(92vw, 620px);
+
+      padding: 34px 24px 28px;
+
+      text-align: center;
+
+      background: rgba(255, 255, 255, 0.94);
+
+      border:
+        1px solid
+        rgba(111, 76, 145, 0.18);
+
+      border-radius: 28px;
+
+      box-shadow:
+        0 24px 60px
+        rgba(76, 50, 96, 0.16);
+    }
+
+    /* 背景装飾 */
+
+    .card::before,
+    .card::after {
+      content: "";
+
+      position: absolute;
+
+      width: 180px;
+      height: 180px;
+
+      border-radius: 50%;
+
+      opacity: 0.15;
+
+      z-index: 0;
+    }
+
+    .card::before {
+      top: -80px;
+      right: -50px;
+
+      background: #ff922e;
+    }
+
+    .card::after {
+      bottom: -100px;
+      left: -70px;
+
+      background: #8e5cc1;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* =========================
+       タイトル
+    ========================== */
+
+    .eyebrow {
+      margin: 0 0 6px;
+
+      font-size: 14px;
+      font-weight: 700;
+
+      letter-spacing: 0.18em;
+
+      color: #7f57a8;
+    }
+
+    h1 {
+      margin: 0;
+
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+      font-size:
+        clamp(
+          34px,
+          8vw,
+          52px
+        );
+
+      line-height: 1.05;
+
+      letter-spacing: 0.02em;
+
+      color: #ee7d1a;
+    }
+
+    .event {
+      margin: 8px 0 22px;
+
+      font-size: 22px;
+      font-weight: 800;
+
+      color: #7f57a8;
+    }
+
+    .period {
+      display: inline-block;
+
+      margin-bottom: 24px;
+
+      padding: 8px 16px;
+
+      border-radius: 999px;
+
+      background: #f2e9fb;
+
+      color: #67428e;
+
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* =========================
+       くじエリア
+    ========================== */
+
+    .lottery-box {
+      min-height: 210px;
+
+      display: grid;
+      place-items: center;
+
+      margin: 0 auto 24px;
+
+      padding: 24px;
+
+      border-radius: 24px;
+
+      border:
+        2px dashed
+        #d8c5e9;
+
+      background:
+        linear-gradient(
+          180deg,
+          #fffdfa,
+          #fbf7ff
+        );
+
+      transition: 0.25s ease;
+    }
+
+    .lottery-icon {
+      margin-bottom: 12px;
+
+      font-size: 70px;
+
+      transform-origin: center;
+    }
+
+    .status {
+      font-size: 18px;
+      font-weight: 700;
+
+      color: #594365;
+    }
+
+    /* =========================
+       抽選アニメーション
+    ========================== */
+
+    .lottery-box.drawing
+    .lottery-icon {
+      animation:
+        shake
+        0.18s
+        infinite
+        alternate;
+    }
+
+    @keyframes shake {
+      from {
+        transform:
+          rotate(-7deg)
+          scale(1);
+      }
+
+      to {
+        transform:
+          rotate(7deg)
+          scale(1.06);
+      }
+    }
+
+    /* =========================
+       当選結果
+    ========================== */
+
+    .result {
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+
+      animation:
+        pop
+        0.45s
+        ease;
+    }
+
+    @keyframes pop {
+      0% {
+        transform:
+          scale(0.72);
+
+        opacity: 0;
+      }
+
+      65% {
+        transform:
+          scale(1.06);
+
+        opacity: 1;
+      }
+
+      100% {
+        transform:
+          scale(1);
+
+        opacity: 1;
+      }
+    }
+
+    .result-label {
+      margin: 0 0 8px;
+
+      font-size: 14px;
+      font-weight: 800;
+
+      letter-spacing: 0.14em;
+
+      color: #ee7d1a;
+    }
+
+    .prize {
+      margin: 0;
+
+      font-size:
+        clamp(
+          28px,
+          7vw,
+          42px
+        );
+
+      font-weight: 900;
+
+      line-height: 1.25;
+
+      color: #5d397b;
+    }
+
+    .sub {
+      margin: 10px 0 0;
+
+      font-size: 14px;
+
+      color: #7c6e82;
+    }
+
+    /* =========================
+       ボタン
+    ========================== */
+
+    button {
+      width: 100%;
+      max-width: 390px;
+
+      padding: 17px 22px;
+
+      border: 0;
+
+      border-radius: 999px;
+
+      cursor: pointer;
+
+      font-size: 20px;
+      font-weight: 900;
+
+      letter-spacing: 0.06em;
+
+      color: white;
+
+      background:
+        linear-gradient(
+          90deg,
+          #ed7c20,
+          #8c59b7
+        );
+
+      box-shadow:
+        0 12px 26px
+        rgba(116, 72, 148, 0.25);
+
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform:
+        translateY(-2px);
+    }
+
+    button:active {
+      transform:
+        translateY(1px)
+        scale(0.99);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+
+      opacity: 0.65;
+
+      transform: none;
+    }
+
+    /* =========================
+       注意書き
+    ========================== */
+
+    .note {
+      max-width: 470px;
+
+      margin: 18px auto 0;
+
+      font-size: 12px;
+
+      line-height: 1.7;
+
+      color: #897b90;
+    }
+
+    /* =========================
+       キラキラ演出
+    ========================== */
+
+    .sparkle {
+      position: fixed;
+
+      pointer-events: none;
+
+      z-index: 999;
+
+      font-size: 24px;
+
+      animation:
+        fall
+        1.2s
+        ease-out
+        forwards;
+    }
+
+    @keyframes fall {
+      0% {
+        transform:
+          translateY(-20px)
+          rotate(0deg)
+          scale(0.7);
+
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 1;
+      }
+
+      100% {
+        transform:
+          translateY(190px)
+          rotate(220deg)
+          scale(1.15);
+
+        opacity: 0;
+      }
+    }
+
+    /* =========================
+       スマホ対応
+    ========================== */
+
+    @media
+    (max-width: 480px) {
+
+      .card {
+        padding:
+          28px
+          18px
+          24px;
+
+        border-radius: 22px;
+      }
+
+      .lottery-box {
+        min-height: 190px;
+      }
+
+      button {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="card">
+
+    <div class="content">
+
+      <p class="eyebrow">
+        HYDROGEN SALON heal
+      </p>
+
+      <h1>
+        Halloween
+      </h1>
+
+      <div class="event">
+        EVENT LOTTERY
+      </div>
+
+      <div class="period">
+        10/15(木) ～ 10/31(土)
+      </div>
+
+
+      <!-- =====================
+           くじ表示エリア
+      ====================== -->
+
+      <section
+        class="lottery-box"
+        id="lotteryBox"
+      >
+
+        <!-- 抽選前 -->
+
+        <div id="beforeResult">
+
+          <div class="lottery-icon">
+            🎁
+          </div>
+
+          <div
+            class="status"
+            id="statusText"
+          >
+            ボタンを押して
+            くじを引いてください
+          </div>
+
+        </div>
+
+
+        <!-- 抽選結果 -->
+
+        <div
+          class="result"
+          id="result"
+        >
+
+          <p class="result-label">
+            CONGRATULATIONS!
+          </p>
+
+          <p
+            class="prize"
+            id="prizeText"
+          ></p>
+
+          <p class="sub">
+            スタッフに
+            この画面をお見せください
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- =====================
+           くじボタン
+      ====================== -->
+
+      <button id="drawButton">
+        くじを引く
+      </button>
+
+
+      <!-- =====================
+           注意書き
+      ====================== -->
+
+      <p class="note">
+
+        ※景品は必ず
+        いずれか1つ当たります。
+
+        <br>
+
+        ※スタッフ確認後に
+        画面を閉じてください。
+
+      </p>
+
+    </div>
+
+  </main>
+
+
+  <script>
+
+    /* =========================================
+       景品設定
+    ==========================================
+
+       weight の数字が
+       大きいほど当たりやすくなります。
+
+       合計100でなくても大丈夫です。
+
+    ========================================== */
+
+    const prizes = [
+
+      {
+        name:
+          "大当たり！\nL&G 60分 無料",
+
+        weight: 3
+      },
+
+      {
+        name:
+          "レプトンガス 30分 無料",
+
+        weight: 12
+      },
+
+      {
+        name:
+          "レプトンガス 15分 無料",
+
+        weight: 20
+      },
+
+      {
+        name:
+          "ゴッドクリーナー 30分 無料",
+
+        weight: 8
+      },
+
+      {
+        name:
+          "次回 500円OFF",
+
+        weight: 27
+      },
+
+      {
+        name:
+          "有料ドリンク 1杯無料",
+
+        weight: 30
+      }
+
+    ];
+
+
+    /* =========================================
+       HTML要素取得
+    ========================================== */
+
+    const button =
+      document.getElementById(
+        "drawButton"
+      );
+
+    const result =
+      document.getElementById(
+        "result"
+      );
+
+    const prizeText =
+      document.getElementById(
+        "prizeText"
+      );
+
+    const statusText =
+      document.getElementById(
+        "statusText"
+      );
+
+    const beforeResult =
+      document.getElementById(
+        "beforeResult"
+      );
+
+    const lotteryBox =
+      document.getElementById(
+        "lotteryBox"
+      );
+
+
+    /* =========================================
+       景品抽選
+    ========================================== */
+
+    function pickPrize() {
+
+      const totalWeight =
+        prizes.reduce(
+          (sum, prize) =>
+            sum + prize.weight,
+          0
+        );
+
+
+      let random =
+        Math.random()
+        * totalWeight;
+
+
+      for (
+        const prize
+        of prizes
+      ) {
+
+        random -=
+          prize.weight;
+
+
+        if (
+          random < 0
+        ) {
+
+          return prize.name;
+
+        }
+
+      }
+
+
+      return (
+        prizes[
+          prizes.length - 1
+        ].name
+      );
+
+    }
+
+
+    /* =========================================
+       当選時の演出
+    ========================================== */
+
+    function createSparkles() {
+
+      const items = [
+        "✨",
+        "🎃",
+        "⭐",
+        "🍬"
+      ];
+
+
+      for (
+        let i = 0;
+        i < 18;
+        i++
+      ) {
+
+        const el =
+          document.createElement(
+            "div"
+          );
+
+
+        el.className =
+          "sparkle";
+
+
+        el.textContent =
+          items[
+            Math.floor(
+              Math.random()
+              * items.length
+            )
+          ];
+
+
+        el.style.left =
+          Math.random()
+          * 100
+          + "vw";
+
+
+        el.style.top =
+          (
+            Math.random()
+            * 15
+            + 5
+          )
+          + "vh";
+
+
+        el.style.animationDelay =
+          Math.random()
+          * 0.35
+          + "s";
+
+
+        document.body
+          .appendChild(el);
+
+
+        setTimeout(
+          () => {
+
+            el.remove();
+
+          },
+          1800
+        );
+
+      }
+
+    }
+
+
+    /* =========================================
+       ボタンを押した時
+    ========================================== */
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        /* 二重押し防止 */
+
+        button.disabled =
+          true;
+
+
+        /* 前回結果を非表示 */
+
+        result.classList
+          .remove(
+            "show"
+          );
+
+
+        beforeResult
+          .style
+          .display =
+          "block";
+
+
+        /* 抽選アニメーション */
+
+        lotteryBox
+          .classList
+          .add(
+            "drawing"
+          );
+
+
+        statusText
+          .textContent =
+          "抽選中・・・";
+
+
+        button
+          .textContent =
+          "抽選中・・・";
+
+
+        /* 1.7秒後に結果表示 */
+
+        setTimeout(
+          () => {
+
+            const selectedPrize =
+              pickPrize();
+
+
+            lotteryBox
+              .classList
+              .remove(
+                "drawing"
+              );
+
+
+            beforeResult
+              .style
+              .display =
+              "none";
+
+
+            prizeText
+              .innerHTML =
+              selectedPrize
+                .replace(
+                  /\n/g,
+                  "<br>"
+                );
+
+
+            result
+              .classList
+              .add(
+                "show"
+              );
+
+
+            button
+              .textContent =
+              "もう一度引く";
+
+
+            button.disabled =
+              false;
+
+
+            /* 当選演出 */
+
+            createSparkles();
+
+          },
+          1700
+        );
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
