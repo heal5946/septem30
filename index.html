@@ -640,128 +640,188 @@
        景品抽選
     ========================================== */
 
-    function pickPrize() {
+    /* =========================================
+   景品抽選
+   直前と同じ景品は当たりにくくする
+========================================== */
 
-      const totalWeight =
-        prizes.reduce(
-          (sum, prize) =>
-            sum + prize.weight,
-          0
-        );
+/*
+  直前に当たった景品を保存
+  localStorageを使うので、
+  ページを更新しても直前の結果を覚えています。
+*/
+let lastPrizeName =
+  localStorage.getItem("lastPrizeName");
 
 
-      let random =
-        Math.random()
-        * totalWeight;
+/*
+  直前と同じ景品の当たりやすさ
+
+  0.2 = 通常の20％
+  0.1 = 通常の10％
+  0   = 連続では絶対に出ない
+*/
+const repeatMultiplier = 0.2;
 
 
-      for (
-        const prize
-        of prizes
+function pickPrize() {
+
+  /*
+    直前に出た景品だけ
+    weightを一時的に小さくする
+  */
+  const adjustedPrizes =
+    prizes.map(prize => {
+
+      let adjustedWeight =
+        prize.weight;
+
+      if (
+        prize.name ===
+        lastPrizeName
       ) {
 
-        random -=
-          prize.weight;
-
-
-        if (
-          random < 0
-        ) {
-
-          return prize.name;
-
-        }
+        adjustedWeight =
+          prize.weight *
+          repeatMultiplier;
 
       }
 
+      return {
+        ...prize,
+        adjustedWeight:
+          adjustedWeight
+      };
 
-      return (
-        prizes[
-          prizes.length - 1
-        ].name
+    });
+
+
+  /*
+    調整後のweight合計
+  */
+  const totalWeight =
+    adjustedPrizes.reduce(
+      (sum, prize) =>
+        sum +
+        prize.adjustedWeight,
+      0
+    );
+
+
+  /*
+    ランダム抽選
+  */
+  let random =
+    Math.random() *
+    totalWeight;
+
+
+  for (
+    const prize
+    of adjustedPrizes
+  ) {
+
+    random -=
+      prize.adjustedWeight;
+
+
+    if (
+      random < 0
+    ) {
+
+      /*
+        今回の景品を
+        次回用として保存
+      */
+      lastPrizeName =
+        prize.name;
+
+
+      localStorage.setItem(
+        "lastPrizeName",
+        prize.name
       );
 
+
+      return prize.name;
+
     }
 
+  }
+
+
+  /*
+    念のための予備処理
+  */
+  const fallbackPrize =
+    adjustedPrizes[
+      adjustedPrizes.length - 1
+    ];
+
+
+  lastPrizeName =
+    fallbackPrize.name;
+
+
+  localStorage.setItem(
+    "lastPrizeName",
+    fallbackPrize.name
+  );
+
+
+  return fallbackPrize.name;
+
+}
 
     /* =========================================
-       当選時の演出
-    ========================================== */
+   当選時の演出
+========================================== */
 
-    function createSparkles() {
+function createSparkles() {
 
-      const items = [
-        "✨",
-        "🎃",
-        "⭐",
-        "🍬"
+  const items = [
+    "✨",
+    "🎃",
+    "⭐",
+    "🍬"
+  ];
+
+  for (let i = 0; i < 18; i++) {
+
+    const el =
+      document.createElement("div");
+
+    el.className =
+      "sparkle";
+
+    el.textContent =
+      items[
+        Math.floor(
+          Math.random() * items.length
+        )
       ];
 
+    el.style.left =
+      Math.random() * 100 + "vw";
 
-      for (
-        let i = 0;
-        i < 18;
-        i++
-      ) {
+    el.style.top =
+      (
+        Math.random() * 15 + 5
+      ) + "vh";
 
-        const el =
-          document.createElement(
-            "div"
-          );
+    el.style.animationDelay =
+      Math.random() * 0.35 + "s";
 
+    document.body.appendChild(el);
 
-        el.className =
-          "sparkle";
+    setTimeout(() => {
+      el.remove();
+    }, 1800);
 
+  }
 
-        el.textContent =
-          items[
-            Math.floor(
-              Math.random()
-              * items.length
-            )
-          ];
-
-
-        el.style.left =
-          Math.random()
-          * 100
-          + "vw";
-
-
-        el.style.top =
-          (
-            Math.random()
-            * 15
-            + 5
-          )
-          + "vh";
-
-
-        el.style.animationDelay =
-          Math.random()
-          * 0.35
-          + "s";
-
-
-        document.body
-          .appendChild(el);
-
-
-        setTimeout(
-          () => {
-
-            el.remove();
-
-          },
-          1800
-        );
-
-      }
-
-    }
-
-
+}
+    
     /* =========================================
        ボタンを押した時
     ========================================== */
