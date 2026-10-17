@@ -649,10 +649,10 @@
     let lastPrizeName = localStorage.getItem("lastPrizeName");
     let secondLastPrizeName = localStorage.getItem("secondLastPrizeName");
 
-    // 1回前・2回前の景品の重みをそれぞれ通常の20％にします。
+    // 1回前・2回前の景品の重みをそれぞれ通常の5％にします。
     // 数字を小さくするほど出にくくなります（0なら出ません）。
-    const repeatMultiplier = 0.2;
-    const secondRepeatMultiplier = 0.2;
+    const repeatMultiplier = 0.05;
+    const secondRepeatMultiplier = 0.05;
 
     function savePrizeHistory(selectedName) {
       secondLastPrizeName = lastPrizeName;
