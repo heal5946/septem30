@@ -641,140 +641,61 @@
 
     /* =========================================
        景品抽選
+       直前・2回前と同じ景品を出にくくする
     ========================================== */
 
-    /* =========================================
-   景品抽選
-   直前と同じ景品は当たりにくくする
-========================================== */
+    // ページを更新しても直前2回の結果を覚えます。
+    // 以前の設定で保存された直前の結果も引き継ぎます。
+    let lastPrizeName = localStorage.getItem("lastPrizeName");
+    let secondLastPrizeName = localStorage.getItem("secondLastPrizeName");
 
-/*
-  直前に当たった景品を保存
-  localStorageを使うので、
-  ページを更新しても直前の結果を覚えています。
-*/
-let lastPrizeName =
-  localStorage.getItem("lastPrizeName");
+    // 1回前・2回前の景品の重みをそれぞれ通常の20％にします。
+    // 数字を小さくするほど出にくくなります（0なら出ません）。
+    const repeatMultiplier = 0.2;
+    const secondRepeatMultiplier = 0.2;
 
-
-/*
-  直前と同じ景品の当たりやすさ
-
-  0.2 = 通常の20％
-  0.1 = 通常の10％
-  0   = 連続では絶対に出ない
-*/
-const repeatMultiplier = 0.2;
-
-
-function pickPrize() {
-
-  /*
-    直前に出た景品だけ
-    weightを一時的に小さくする
-  */
-  const adjustedPrizes =
-    prizes.map(prize => {
-
-      let adjustedWeight =
-        prize.weight;
-
-      if (
-        prize.name ===
-        lastPrizeName
-      ) {
-
-        adjustedWeight =
-          prize.weight *
-          repeatMultiplier;
-
+    function savePrizeHistory(selectedName) {
+      secondLastPrizeName = lastPrizeName;
+      lastPrizeName = selectedName;
+      localStorage.setItem("lastPrizeName", lastPrizeName);
+      if (secondLastPrizeName !== null) {
+        localStorage.setItem("secondLastPrizeName", secondLastPrizeName);
+      } else {
+        localStorage.removeItem("secondLastPrizeName");
       }
-
-      return {
-        ...prize,
-        adjustedWeight:
-          adjustedWeight
-      };
-
-    });
-
-
-  /*
-    調整後のweight合計
-  */
-  const totalWeight =
-    adjustedPrizes.reduce(
-      (sum, prize) =>
-        sum +
-        prize.adjustedWeight,
-      0
-    );
-
-
-  /*
-    ランダム抽選
-  */
-  let random =
-    Math.random() *
-    totalWeight;
-
-
-  for (
-    const prize
-    of adjustedPrizes
-  ) {
-
-    random -=
-      prize.adjustedWeight;
-
-
-    if (
-      random < 0
-    ) {
-
-      /*
-        今回の景品を
-        次回用として保存
-      */
-      lastPrizeName =
-        prize.name;
-
-
-      localStorage.setItem(
-        "lastPrizeName",
-        prize.name
-      );
-
-
-      return prize.name;
-
     }
 
-  }
+    function pickPrize() {
+      const adjustedPrizes = prizes.map(prize => {
+        let adjustedWeight = prize.weight;
 
+        if (prize.name === lastPrizeName) {
+          adjustedWeight *= repeatMultiplier;
+        } else if (prize.name === secondLastPrizeName) {
+          adjustedWeight *= secondRepeatMultiplier;
+        }
 
-  /*
-    念のための予備処理
-  */
-  const fallbackPrize =
-    adjustedPrizes[
-      adjustedPrizes.length - 1
-    ];
+        return { ...prize, adjustedWeight };
+      });
 
+      const totalWeight = adjustedPrizes.reduce(
+        (sum, prize) => sum + prize.adjustedWeight, 0
+      );
+      let random = Math.random() * totalWeight;
 
-  lastPrizeName =
-    fallbackPrize.name;
+      for (const prize of adjustedPrizes) {
+        random -= prize.adjustedWeight;
+        if (random < 0) {
+          savePrizeHistory(prize.name);
+          return prize.name;
+        }
+      }
 
-
-  localStorage.setItem(
-    "lastPrizeName",
-    fallbackPrize.name
-  );
-
-
-  return fallbackPrize.name;
-
-}
+      // 念のための予備処理
+      const fallbackPrize = adjustedPrizes[adjustedPrizes.length - 1];
+      savePrizeHistory(fallbackPrize.name);
+      return fallbackPrize.name;
+    }
 
     /* =========================================
    当選時の演出
